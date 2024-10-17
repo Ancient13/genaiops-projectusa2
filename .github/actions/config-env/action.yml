@@ -72,26 +72,25 @@ runs:
         '7ca78c08-252a-4471-8644-bb5ff32d4ba0'  # Search Service Contributor
         '64702f94-c441-49e6-a78b-ef80e0188fee'  # Azure AI Developer
         )
-
         
         # Assign roles only if they do not already exist
         for roleId in "${roles[@]}"; do
         # Check if the role assignment already exists
-         role_assignment=$(az role assignment list --assignee "$principalId" --role "$roleId" --scope "$scope" --query "[].id" -o tsv)
+          role_assignment=$(az role assignment list --assignee "$principalId" --role "$roleId" --scope "$scope" --query "[].id" -o tsv)
       
-         if [ -z "$role_assignment" ]; then
+          if [ -z "$role_assignment" ]; then
            # Role assignment doesn't exist, so create it
-           echo "Assigning role $roleId to $principalId for scope $scope"
-           az role assignment create \
-             --assignee-object-id "$principalId" \
-             --assignee-principal-type "ServicePrincipal" \
-             --role "$roleId" \
-             --scope "$scope"
-         else
-           # Role assignment already exists
-           echo "Role $roleId is already assigned to $principalId for scope $scope"
-         fi
-      done
+            echo "Assigning role $roleId to $principalId for scope $scope"
+            az role assignment create \
+               --assignee-object-id "$principalId" \
+               --assignee-principal-type "ServicePrincipal" \
+               --role "$roleId" \
+               --scope "$scope"
+           else
+             # Role assignment already exists
+             echo "Role $roleId is already assigned to $principalId for scope $scope"
+           fi
+        done
 
     - name: Login to Azure Developer CLI 
       shell: bash
