@@ -167,7 +167,14 @@ runs:
 
           # Checking if the resource group exists
           
-          export AZURE_RESOURCE_GROUP=${{ inputs.AZURE_RESOURCE_GROUP }}
+          # Set the fallback value for AZURE_RESOURCE_GROUP
+          if [ -z "${{ inputs.AZURE_RESOURCE_GROUP }}" ]; then
+            AZURE_RESOURCE_GROUP="rg-${{ inputs.AZURE_ENV_NAME }}"
+          else
+            AZURE_RESOURCE_GROUP="${{ inputs.AZURE_RESOURCE_GROUP }}"
+          fi
+    
+          echo "Using AZURE_RESOURCE_GROUP: $AZURE_RESOURCE_GROUP"
           export AZURE_RESOURCE_GROUP=$(azd env get-values -e ${{ inputs.AZURE_ENV_NAME }} | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"' || true)
           if [ -z "$AZURE_RESOURCE_GROUP" ]; then
            resource_group_exist=false
@@ -176,7 +183,7 @@ runs:
           fi        
           echo "🔶 | Resource group ${AZURE_RESOURCE_GROUP:-'Undefined'} exist status: $resource_group_exist"
           
-          echo "AZURE_RESOURCE_GROUP: $AZURE_RESOURCE_GROUP"
+          echo "Still Using AZURE_RESOURCE_GROUP: $AZURE_RESOURCE_GROUP"
 
 
           # Previous deployment exists but the resource group doesn't. 
