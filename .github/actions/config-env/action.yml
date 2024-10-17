@@ -166,17 +166,18 @@ runs:
           fi
 
           # Checking if the resource group exists
-          export AZURE_RESOURCE_GROUP=$(azd env get-values -e {{ inputs.AZURE_ENV_NAME }} | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"' || true)
+          export AZURE_RESOURCE_GROUP=$(azd env get-values -e ${{ inputs.AZURE_ENV_NAME }} | grep ${{ inputs.AZURE_ENV_NAME }} | cut -d'=' -f2 | tr -d '"' || true)
 
-          #export AZURE_RESOURCE_GROUP=$(azd env get-values -e ${{ inputs.AZURE_ENV_NAME }} | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"' || true)
+          export AZURE_RESOURCE_GROUP=$(azd env get-values -e ${{ inputs.AZURE_ENV_NAME }} | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"' || true)
           if [ -z "$AZURE_RESOURCE_GROUP" ]; then
            resource_group_exist=false
           else
             resource_group_exist=$(az group exists --name "$AZURE_RESOURCE_GROUP")  
           fi        
           echo "🔶 | Resource group ${AZURE_RESOURCE_GROUP:-'Undefined'} exist status: $resource_group_exist"
-          #export AZURE_RESOURCE_GROUP= inputs.AZURE_RESOURCE_GROUP
           
+          echo "AZURE_RESOURCE_GROUP: $AZURE_RESOURCE_GROUP"
+
 
           # Previous deployment exists but the resource group doesn't. 
           # This situation occurs if you made a deployment and then deleted the resource group.
