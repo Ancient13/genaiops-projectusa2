@@ -17,13 +17,13 @@ from azure_config import AzureConfig
 azure_config = AzureConfig()
 
 print("Initializing MLClient...")
+
 client = MLClient(
     DefaultAzureCredential(),
     azure_config.subscription_id,
     azure_config.resource_group,
     azure_config.workspace_name
 )
-
 
 def get_ai_studio_url_for_deploy(
     client: MLClient, endpoint_name: str, deployment_name
@@ -74,16 +74,28 @@ def deploy_flow(endpoint_name, deployment_name):
     deployment = ManagedOnlineDeployment(
         name=deployment_name,
         endpoint_name=endpoint_name,
-        model=Model(
-            name="ragflow",
-            path=flow_path,  # path to promptflow folder
-            properties=[ # this enables the chat interface in the endpoint test tab
-                ["azureml.promptflow.source_flow_id", "ragflow"],
-                ["azureml.promptflow.mode", "chat"],
-                ["azureml.promptflow.chat_input", "question"],
-                ["azureml.promptflow.chat_output", "answer"]
-            ]
-        ),
+     model = Model(
+         name="ragwithtrace",
+         path=flow_path,  # path to the promptflow folder
+         properties=[  # enables the chat interface in the endpoint test tab
+             ["azureml.promptflow.source_flow_id", "ragwithtrace"],
+             ["azureml.promptflow.mode", "chat"],
+             ["azureml.promptflow.chat_input", "question"],
+             ["azureml.promptflow.chat_output", "answer"]
+         ]
+     ),
+
+
+        # model=Model(
+        #     name="ragflow",
+        #     path=flow_path,  # path to promptflow folder
+        #     properties=[ # this enables the chat interface in the endpoint test tab
+        #         ["azureml.promptflow.source_flow_id", "ragflow"],
+        #         ["azureml.promptflow.mode", "chat"],
+        #         ["azureml.promptflow.chat_input", "question"],
+        #         ["azureml.promptflow.chat_output", "answer"]
+        #     ]
+        # ),
         environment=Environment(
             build=BuildContext(
                 path=flow_path,

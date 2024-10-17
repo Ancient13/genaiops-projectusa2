@@ -17,6 +17,9 @@ inputs:
   AZURE_LOCATION:
     description: 'Azure location'
     required: true
+  AZURE_RESOURCE_GROUP:
+    description: 'Azure resource'
+    required: true
   MANUAL_PROVISIONING:
     description: 'Will not provision the environment if value is true, default is false'
     required: true
@@ -69,15 +72,25 @@ runs:
         '7ca78c08-252a-4471-8644-bb5ff32d4ba0'  # Search Service Contributor
         '64702f94-c441-49e6-a78b-ef80e0188fee'  # Azure AI Developer
         )
-
+        
+        # Assign roles only if they do not already exist
         for roleId in "${roles[@]}"; do
-        az role assignment create \
-          --assignee-object-id "$principalId" \
-          --assignee-principal-type "ServicePrincipal" \
-          --role "$roleId" \
-          --scope "$scope"
+        # Check if the role assignment already exists
+          role_assignment=$(az role assignment list --assignee "$principalId" --role "$roleId" --scope "$scope" --query "[].id" -o tsv)
+      
+          if [ -z "$role_assignment" ]; then
+           # Role assignment doesn't exist, so create it
+            echo "Assigning role $roleId to $principalId for scope $scope"
+            az role assignment create \
+               --assignee-object-id "$principalId" \
+               --assignee-principal-type "ServicePrincipal" \
+               --role "$roleId" \
+               --scope "$scope"
+           else
+             # Role assignment already exists
+             echo "Role $roleId is already assigned to $principalId for scope $scope"
+           fi
         done
-
 
     - name: Login to Azure Developer CLI 
       shell: bash
@@ -162,15 +175,34 @@ runs:
             azd provision --no-prompt
           fi
 
-          # Checking if the resource group exists
-          export AZURE_RESOURCE_GROUP=$(azd env get-values -e ${{ inputs.AZURE_ENV_NAME }} | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"' || true)
+          ## New code
+          # Set the fallback value for AZURE_RESOURCE_GROUP
+          if [ -z "${AZURE_RESOURCE_GROUP}" ]; then
+            AZURE_RESOURCE_GROUP="rg-genaiops-project-devusa2"
+          fi
+
+          echo "Using AZURE_RESOURCE_GROUP: $AZURE_RESOURCE_GROUP"
+          
+          # Fetch AZURE_RESOURCE_GROUP from environment values (if available)
+          AZURE_ENV_RESOURCE_GROUP=$(azd env get-values -e genaiops-project-devusa2 | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"' || true)
+          
+          # Use the fetched AZURE_RESOURCE_GROUP if it exists, otherwise retain the fallback
+          if [ -n "$AZURE_ENV_RESOURCE_GROUP" ]; then
+            AZURE_RESOURCE_GROUP="$AZURE_ENV_RESOURCE_GROUP"
+          fi
+
+          # Check if the resource group exists
           if [ -z "$AZURE_RESOURCE_GROUP" ]; then
             resource_group_exist=false
           else
-            resource_group_exist=$(az group exists --name "$AZURE_RESOURCE_GROUP")  
-          fi        
+            resource_group_exist=$(az group exists --name "$AZURE_RESOURCE_GROUP")
+          fi
+          
           echo "🔶 | Resource group ${AZURE_RESOURCE_GROUP:-'Undefined'} exist status: $resource_group_exist"
+          echo "Still Using AZURE_RESOURCE_GROUP: $AZURE_RESOURCE_GROUP"
 
+          # Checking if the resource group exists
+          
           # Previous deployment exists but the resource group doesn't. 
           # This situation occurs if you made a deployment and then deleted the resource group.
           # Resource group may also be empty because previous deployment finished with failure.
