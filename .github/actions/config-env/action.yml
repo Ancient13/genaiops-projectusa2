@@ -165,27 +165,34 @@ runs:
             azd provision --no-prompt
           fi
 
-          # Checking if the resource group exists
-          
+          ## New code
           # Set the fallback value for AZURE_RESOURCE_GROUP
-          if [ -z "${{ inputs.AZURE_RESOURCE_GROUP }}" ]; then
-            AZURE_RESOURCE_GROUP="rg-${{ inputs.AZURE_ENV_NAME }}"
-          else
-            AZURE_RESOURCE_GROUP="${{ inputs.AZURE_RESOURCE_GROUP }}"
+          if [ -z "${AZURE_RESOURCE_GROUP}" ]; then
+            AZURE_RESOURCE_GROUP="rg-genaiops-project-devusa2"
           fi
-    
+
           echo "Using AZURE_RESOURCE_GROUP: $AZURE_RESOURCE_GROUP"
-          export AZURE_RESOURCE_GROUP=$(azd env get-values -e ${{ inputs.AZURE_ENV_NAME }} | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"' || true)
-          if [ -z "$AZURE_RESOURCE_GROUP" ]; then
-           resource_group_exist=false
-          else
-            resource_group_exist=$(az group exists --name "$AZURE_RESOURCE_GROUP")  
-          fi        
-          echo "🔶 | Resource group ${AZURE_RESOURCE_GROUP:-'Undefined'} exist status: $resource_group_exist"
           
+          # Fetch AZURE_RESOURCE_GROUP from environment values (if available)
+          AZURE_ENV_RESOURCE_GROUP=$(azd env get-values -e genaiops-project-devusa2 | grep AZURE_RESOURCE_GROUP | cut -d'=' -f2 | tr -d '"' || true)
+          
+          # Use the fetched AZURE_RESOURCE_GROUP if it exists, otherwise retain the fallback
+          if [ -n "$AZURE_ENV_RESOURCE_GROUP" ]; then
+            AZURE_RESOURCE_GROUP="$AZURE_ENV_RESOURCE_GROUP"
+          fi
+
+          # Check if the resource group exists
+          if [ -z "$AZURE_RESOURCE_GROUP" ]; then
+            resource_group_exist=false
+          else
+            resource_group_exist=$(az group exists --name "$AZURE_RESOURCE_GROUP")
+          fi
+          
+          echo "🔶 | Resource group ${AZURE_RESOURCE_GROUP:-'Undefined'} exist status: $resource_group_exist"
           echo "Still Using AZURE_RESOURCE_GROUP: $AZURE_RESOURCE_GROUP"
 
-
+          # Checking if the resource group exists
+          
           # Previous deployment exists but the resource group doesn't. 
           # This situation occurs if you made a deployment and then deleted the resource group.
           # Resource group may also be empty because previous deployment finished with failure.
